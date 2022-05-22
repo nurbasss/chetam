@@ -25,6 +25,10 @@ func main() {
 	r.HandleFunc("/api/register", userRegister).Methods("POST")
 	// POST /api/login - log in as an existing user and get a JWT token
 	r.HandleFunc("/api/login", userLogin).Methods("POST")
+	// POST /api/posts/ - adding a post with url or text
+	r.HandleFunc("/api/posts", isAuthorized(createPost)).Methods("POST")
+	// DELETE /api/post/{POST_ID} - delete post by id
+	r.HandleFunc("/api/posts/{post_id}", isAuthorized(deletePostByID)).Methods("DELETE")
 
 	fmt.Println("starting server at :8080")
 
