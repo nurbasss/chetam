@@ -8,7 +8,11 @@ import (
 
 //connection to mongo db
 func connect() (*mgo.Database, error) {
-	host := "mongo:27017"
+	//host := "mongo:27017"
+	host := "mongodb://localhost:27100"
+	/* poka localno zapuskaite docker 
+	ewe ne nastroil dlya go app 
+	no mongo na dockere*/
 	dbName := "chetam"
 
 	if session, err := mgo.Dial(host); err != nil {
