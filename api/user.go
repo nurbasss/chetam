@@ -30,8 +30,8 @@ func (u *User) getJWTToken() (string, error) {
 			"username": u.Username,
 			"id": u.ID,
 		},
-		"iat": time.Now().Add(time.Minute * 0).Unix(), // iat = issued at
-		"exp": time.Now().Add(time.Minute * 5).Unix(), // exp = expiration time
+		"iat": time.Now().Add(time.Hour * 0).Unix(), // iat = issued at
+		"exp": time.Now().Add(time.Hour * 24).Unix(), // exp = expiration time
 	})
 
 	if tokenString, err = token.SignedString(tokenSecret); err != nil {
