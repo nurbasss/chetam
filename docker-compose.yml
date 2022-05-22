@@ -3,15 +3,24 @@ services:
   
   mongo:
     image: 'mongo:latest'
-    container_name: 'dp-mongo'
+    container_name: 'chetam-mongo'
     ports:
       - '27100:27017'
   
   server:
-    container_name: 'dp-api'    
+    container_name: 'chetam-api'    
     build: './api/'
     ports:
       - 8080:8080
     depends_on:
       - 'mongo'
     restart: always
+  
+  mongo_express:
+      image: mongo-express
+      container_name: mongo_express
+      depends_on:
+          - 'mongo'
+      ports:
+          - '8081:8081'
+      restart: always
