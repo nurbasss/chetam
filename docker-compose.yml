@@ -1,0 +1,17 @@
+version: "3"
+services:
+  
+  mongo:
+    image: 'mongo:latest'
+    container_name: 'dp-mongo'
+    ports:
+      - '27100:27017'
+  
+  server:
+    container_name: 'dp-api'    
+    build: './api/'
+    ports:
+      - 8080:8080
+    depends_on:
+      - 'mongo'
+    restart: always
