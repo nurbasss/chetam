@@ -117,3 +117,161 @@ func (postModel *PostModel) getAll() ([]Post, int, error) {
 
 	return p, http.StatusOK, nil
 }
+
+// Upvote post by id
+func (postModel *PostModel) upvoteByID(post *Post, author *Author) (int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	if status, err := postModel.checkExistsByID(post); err != nil {
+		return status, err
+	}
+
+	if status, err := postModel.findByID(post); err != nil {
+		return status, err
+	}
+
+	setVote(post, author, true)
+
+	setScoreAndUpvotePercentage(post)
+
+	return postModel.updateByID(post)
+}
+
+// Downvote post by id
+func (postModel *PostModel) downvoteByID(post *Post, author *Author) (int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	if status, err := postModel.checkExistsByID(post); err != nil {
+		return status, err
+	}
+
+	if status, err := postModel.findByID(post); err != nil {
+		return status, err
+	}
+
+	setVote(post, author, false)
+
+	setScoreAndUpvotePercentage(post)
+
+	return postModel.updateByID(post)
+}
+
+// Find post by id
+func (postModel *PostModel) findByID(post *Post) (int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	if err := postModel.DB.C("posts").Find(
+		bson.M{
+			"_id": bson.ObjectIdHex(string(post.ID)),
+		}).One(&post); err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	return http.StatusOK, nil
+}
+
+func setVote(post *Post, author *Author, isUpvote bool) (int, error) {
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	upAdd := 0
+	if isUpvote {
+		upAdd = 1
+	} else {
+		upAdd = -1
+	}
+
+	if len(post.Votes) == 0 {
+		post.Votes = append(post.Votes, Vote{User: author.ID, Vote: upAdd})
+	} else {
+		isExistsAuthor := false
+		for indx, vote := range post.Votes {
+			if vote.User == author.ID {
+				isExistsAuthor = true
+				if vote.Vote == (1 * upAdd) {
+					post.Votes = append(post.Votes[:indx], post.Votes[indx+1:]...)
+				} else if vote.Vote == (-1 * upAdd) {
+					post.Votes[indx].Vote = upAdd
+				} else {
+					post.Votes = append(post.Votes, Vote{User: author.ID, Vote: upAdd})
+				}
+				break
+			}
+		}
+		if !isExistsAuthor {
+			post.Votes = append(post.Votes, Vote{User: author.ID, Vote: upAdd})
+		}
+	}
+
+	return http.StatusOK, nil
+}
+
+func setScoreAndUpvotePercentage(post *Post) (int, error) {
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	countUp := 0
+	countDown := 0
+	countUpDown := 0
+	for _, vote := range post.Votes {
+		if vote.Vote == 1 {
+			countUp++
+			countUpDown++
+		}
+		if vote.Vote == -1 {
+			countDown--
+			countUpDown++
+		}
+	}
+
+	post.Score = countUp + countDown
+
+	if countUpDown > 0 {
+		post.UpvotePercentage = (100 * countUp) / countUpDown
+	} else {
+		post.UpvotePercentage = 0
+	}
+
+	return http.StatusOK, nil
+}
+
+// Update post by id
+func (postModel *PostModel) updateByID(post *Post) (int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	if err := postModel.DB.C("posts").Update(
+		bson.M{
+			"_id": post.ID,
+		},
+		post); err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	return http.StatusOK, nil
+}
