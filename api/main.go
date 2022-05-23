@@ -35,6 +35,10 @@ func main() {
 	r.HandleFunc("/api/posts/{post_id}/upvote", isAuthorized(upvotePost)).Methods("GET")
 	// GET /api/post/{POST_ID}/downvote - downvote by post id
 	r.HandleFunc("/api/posts/{post_id}/downvote", isAuthorized(downvotePost)).Methods("GET")
+	// POST /api/post/{POST_ID} - add comment to a post by id
+	r.HandleFunc("/api/posts/{post_id}", isAuthorized(addComment)).Methods("POST")
+	// DELETE /api/post/{POST_ID}/{COMMENT_ID} - delete comment from a post by id
+	r.HandleFunc("/api/posts/{post_id}/{comment_id}", isAuthorized(deleteComment)).Methods("DELETE")
 
 	fmt.Println("starting server at :8080")
 

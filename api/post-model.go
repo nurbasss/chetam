@@ -275,3 +275,59 @@ func (postModel *PostModel) updateByID(post *Post) (int, error) {
 
 	return http.StatusOK, nil
 }
+
+// Add new comment to post by id
+func (postModel *PostModel) addCommentByID(post *Post, author *Author, comment *Comment) (int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	if status, err := postModel.checkExistsByID(post); err != nil {
+		return status, err
+	}
+
+	if status, err := postModel.findByID(post); err != nil {
+		return status, err
+	}
+
+	now := time.Now()
+	post.Comments = append(post.Comments, Comment{
+		ID:      bson.NewObjectId(),
+		Created: fmt.Sprintf("%sT%sZ", now.Format("2006-01-02"), now.Format("03:04:05.000")),
+		Author:  *author,
+		Body:    comment.Comment,
+	})
+
+	return postModel.updateByID(post)
+}
+
+// Delete exists comment to post by id
+func (postModel *PostModel) deleteCommentByID(post *Post, author *Author, comment *Comment) (int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	if post == nil {
+		return http.StatusInternalServerError, errors.New("chetam post not initialized")
+	}
+
+	if status, err := postModel.checkExistsByID(post); err != nil {
+		return status, err
+	}
+
+	if status, err := postModel.findByID(post); err != nil {
+		return status, err
+	}
+
+	for indx, c := range post.Comments {
+		if c.Author.ID == author.ID && c.ID == bson.ObjectIdHex(string(comment.ID)) {
+			post.Comments = append(post.Comments[:indx], post.Comments[indx+1:]...)
+		}
+	}
+
+	return postModel.updateByID(post)
+}

@@ -340,3 +340,139 @@ func downvotePost(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 	w.Write([]byte("\n\n"))
 }
+
+func addComment(w http.ResponseWriter, r *http.Request) {
+	var (
+		body     []byte
+		response []byte
+		db       *mgo.Database
+		token    *jwt.Token
+		err      error
+	)
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		jsonError(w, http.StatusBadRequest, "chetam bad request type")
+		return
+	}
+
+	if body, err = ioutil.ReadAll(r.Body); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	comment := &Comment{}
+	if err = json.Unmarshal(body, comment); err != nil {
+		jsonError(w, http.StatusBadRequest, "chetam cannot convert body to comment")
+		return
+	}
+
+	vars := mux.Vars(r)
+	postID := vars["post_id"]
+	if postID == "" {
+		jsonError(w, http.StatusBadRequest, "chetam net post id")
+		return
+	}
+
+	if db, err = connect(); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer db.Session.Close()
+
+	postModel := PostModel{
+		DB: db,
+	}
+
+	if token, err = returnToken(r); err != nil {
+		jsonError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	author := &Author{}
+	if err := author.fullFromJWTToken(token); err != nil {
+		jsonError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	post := &Post{ID: bson.ObjectId(postID)}
+	if status, err := postModel.addCommentByID(post, author, comment); status != http.StatusOK || err != nil {
+		jsonMessage(w, status, err.Error())
+		return
+	}
+
+	if response, err = json.Marshal(post); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+	w.Write([]byte("\n\n"))
+}
+
+func deleteComment(w http.ResponseWriter, r *http.Request) {
+	var (
+		response []byte
+		db       *mgo.Database
+		token    *jwt.Token
+		err      error
+	)
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		jsonError(w, http.StatusBadRequest, "chetam bad request type")
+		return
+	}
+
+	vars := mux.Vars(r)
+	postID := vars["post_id"]
+	if postID == "" {
+		jsonError(w, http.StatusBadRequest, "chetam net post id")
+		return
+	}
+
+	commentID := vars["comment_id"]
+	if commentID == "" {
+		jsonError(w, http.StatusBadRequest, "chetam net comment id")
+		return
+	}
+
+	if db, err = connect(); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer db.Session.Close()
+
+	postModel := PostModel{
+		DB: db,
+	}
+
+	if token, err = returnToken(r); err != nil {
+		jsonError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	author := &Author{}
+	if err := author.fullFromJWTToken(token); err != nil {
+		jsonError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	post := &Post{ID: bson.ObjectId(postID)}
+	comment := &Comment{ID: bson.ObjectId(commentID)}
+	if status, err := postModel.deleteCommentByID(post, author, comment); status != http.StatusOK || err != nil {
+		jsonMessage(w, status, err.Error())
+		return
+	}
+
+	if response, err = json.Marshal(post); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+	w.Write([]byte("\n\n"))
+}
