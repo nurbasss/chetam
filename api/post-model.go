@@ -103,3 +103,17 @@ func (postModel *PostModel) checkExistsByID(post *Post) (int, error) {
 
 	return http.StatusOK, nil
 }
+
+// Get all posts
+func (postModel *PostModel) getAll() ([]Post, int, error) {
+	if postModel == nil || postModel.DB == nil {
+		return nil, http.StatusInternalServerError, errors.New("chetam post model type not initialized")
+	}
+
+	var p []Post
+	if err := postModel.DB.C("posts").Find(nil).All(&p); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return p, http.StatusOK, nil
+}

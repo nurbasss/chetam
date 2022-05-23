@@ -185,3 +185,42 @@ func deletePostByID(w http.ResponseWriter, r *http.Request) {
 
 	jsonMessage(w, http.StatusOK, "chetam post deleted success")
 }
+
+func getAllPosts(w http.ResponseWriter, r *http.Request) {
+	var (
+		response []byte
+		db       *mgo.Database
+		err      error
+	)
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		jsonError(w, http.StatusBadRequest, "chetam bad request type")
+		return
+	}
+
+	if db, err = connect(); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer db.Session.Close()
+
+	postModel := PostModel{
+		DB: db,
+	}
+
+	posts, status, err := postModel.getAll()
+	if status != http.StatusOK || err != nil {
+		jsonError(w, status, err.Error())
+		return
+	}
+
+	if response, err = json.Marshal(posts); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+	w.Write([]byte("\n\n"))
+}

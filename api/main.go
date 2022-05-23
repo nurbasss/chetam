@@ -29,6 +29,8 @@ func main() {
 	r.HandleFunc("/api/posts", isAuthorized(createPost)).Methods("POST")
 	// DELETE /api/post/{POST_ID} - delete post by id
 	r.HandleFunc("/api/posts/{post_id}", isAuthorized(deletePostByID)).Methods("DELETE")
+	// GET /api/posts/ - get all posts
+	r.HandleFunc("/api/posts", getAllPosts).Methods("GET")
 
 	fmt.Println("starting server at :8080")
 
